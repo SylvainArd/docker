@@ -1,0 +1,29 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:  # Permet de déclencher manuellement le workflow
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    environment: docker  # Spécifie l'environnement docker pour les secrets
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+
+    - name: Terraform Init
+      run: terraform -chdir=terraform init
+
+    - name: Terraform Destroy
+      run: terraform -chdir=terraform destroy -auto-approve
