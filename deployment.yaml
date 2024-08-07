@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-apache-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: php-apache
+  template:
+    metadata:
+      labels:
+        app: php-apache
+    spec:
+      containers:
+      - name: php-apache
+        image: 533267397760.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest
+        ports:
+        - containerPort: 80
