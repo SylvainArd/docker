@@ -18,7 +18,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.docker_AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.docker_AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.docker_AWS_REGION }}
+        aws-region: us-west-2
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v1
@@ -35,16 +35,16 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.docker_AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.docker_AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.docker_AWS_REGION }}
+        aws-region: us-west-2
 
     - name: Build, tag, and push Docker image
       run: |
-        docker build -t ${{ secrets.docker_AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.docker_AWS_REGION }}.amazonaws.com/helloworld-php-apache:latest .
-        docker push ${{ secrets.docker_AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.docker_AWS_REGION }}.amazonaws.com/helloworld-php-apache:latest
+        docker build -t ${{ secrets.docker_AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest .
+        docker push ${{ secrets.docker_AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest
 
     - name: Update Kubeconfig
       run: |
-        aws eks update-kubeconfig --region $(terraform -chdir=terraform output -raw region) --name $(terraform -chdir=terraform output -raw eks_cluster_name)
+        aws eks update-kubeconfig --region us-west-2 --name $(terraform -chdir=terraform output -raw eks_cluster_name)
 
     - name: Deploy to Kubernetes
       run: |
