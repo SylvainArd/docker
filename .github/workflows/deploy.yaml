@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: docker  # Spécifiez l'environnement
 
     steps:
       - name: Checkout code
@@ -16,8 +17,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.docker.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.docker.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
 
       - name: Set up Docker Buildx
@@ -25,11 +26,11 @@ jobs:
 
       - name: Log in to Amazon ECR
         run: |
-          aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${{ secrets.docker.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com
+          aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com
 
       - name: Build and push Docker image
         run: |
-          IMAGE_URI=${{ secrets.docker.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest
+          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
 
