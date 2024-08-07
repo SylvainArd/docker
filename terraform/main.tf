@@ -49,29 +49,26 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-resource "aws_security_group" "lb_sg" {
-  name        = "lb-sg"
-  description = "Allow HTTP inbound traffic"
+resource "aws_security_group" "eks_sg" {
+  name_prefix = "eks-sg-"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description = "HTTP from anywhere"
-    from_port   = 80
-    to_port     = 80
+    from_port   = 0
+    to_port     = 65535
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    description = "Allow all outbound traffic"
     from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    to_port     = 65535
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
-    Name = "lb-sg"
+    Name = "eks-sg"
   }
 }
 
@@ -85,7 +82,7 @@ resource "aws_eks_cluster" "eks_cluster" {
 
   vpc_config {
     subnet_ids         = aws_subnet.public.*.id
-    security_group_ids = [aws_security_group.lb_sg.id]
+    security_group_ids = [aws_security_group.eks_sg.id]
   }
 
   depends_on = [aws_iam_role_policy_attachment.eks_policy]
@@ -102,6 +99,12 @@ resource "aws_eks_node_group" "eks_nodes" {
     max_size     = 3
     min_size     = 1
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_node_policy,
+    aws_iam_role_policy_attachment.eks_cni_policy,
+    aws_iam_role_policy_attachment.ecr_read_only
+  ]
 }
 
 resource "aws_iam_role" "eks_role" {
@@ -111,11 +114,11 @@ resource "aws_iam_role" "eks_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
           Service = "eks.amazonaws.com"
         }
+        Action = "sts:AssumeRole"
       }
     ]
   })
@@ -133,11 +136,11 @@ resource "aws_iam_role" "eks_node_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
           Service = "ec2.amazonaws.com"
         }
+        Action = "sts:AssumeRole"
       }
     ]
   })
@@ -165,7 +168,7 @@ output "subnet_ids" {
 }
 
 output "security_group_id" {
-  value = aws_security_group.lb_sg.id
+  value = aws_security_group.eks_sg.id
 }
 
 output "eks_cluster_name" {
