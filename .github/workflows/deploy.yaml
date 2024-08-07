@@ -19,34 +19,58 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-west-2
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.docker.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.docker.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.docker.AWS_REGION }}
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v1
 
     - name: Terraform Init
       run: terraform -chdir=terraform init
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.docker.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.docker.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.docker.AWS_REGION }}
 
     - name: Terraform Apply
       run: terraform -chdir=terraform apply -auto-approve
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.docker.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.docker.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.docker.AWS_REGION }}
 
     - name: Authenticate Docker to ECR
       id: ecr-login
       uses: aws-actions/amazon-ecr-login@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ secrets.docker.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.docker.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-west-2
 
     - name: Build, tag, and push Docker image
       run: |
-        docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest .
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest
+        docker build -t ${{ secrets.docker.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest .
+        docker push ${{ secrets.docker.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.docker.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.docker.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.docker.AWS_REGION }}
 
     - name: Update Kubeconfig
       run: |
         aws eks update-kubeconfig --region us-west-2 --name $(terraform -chdir=terraform output -raw eks_cluster_name)
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.docker.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.docker.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.docker.AWS_REGION }}
 
     - name: Deploy to Kubernetes
       run: |
         kubectl apply -f kubernetes/deployment.yaml
         kubectl apply -f kubernetes/service.yaml
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.docker.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.docker.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.docker.AWS_REGION }}
