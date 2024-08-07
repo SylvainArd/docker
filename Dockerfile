@@ -6,10 +6,10 @@ RUN apt-get update && \
     apt-get install -y software-properties-common && \
     add-apt-repository ppa:ondrej/php && \
     apt-get update && \
-    apt-get install -y php libapache2-mod-php apache2
+    apt-get install -y php8.1 libapache2-mod-php8.1 apache2
 
 # Configurer Apache pour exécuter les fichiers PHP
-RUN a2enmod php
+RUN a2enmod php8.1
 
 # Ajouter la directive ServerName pour éviter l'avertissement
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
