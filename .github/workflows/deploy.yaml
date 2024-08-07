@@ -1,4 +1,4 @@
-name: Build and Deploy to EKS
+name: Deploy
 
 on:
   push:
@@ -6,39 +6,43 @@ on:
       - main
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-    environment: docker  # Spécifiez l'environnement
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+    - name: Terraform Init
+      run: terraform -chdir=terraform init
 
-      - name: Log in to Amazon ECR
-        run: |
-          aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com
+    - name: Terraform Apply
+      run: terraform -chdir=terraform apply -auto-approve
 
-      - name: Build and push Docker image
-        run: |
-          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/helloworld-php-apache:latest
-          docker build -t $IMAGE_URI .
-          docker push $IMAGE_URI
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Update Kubeconfig
-        run: |
-          aws eks update-kubeconfig --name my-cluster --region us-west-2
+    - name: Authenticate Docker to ECR
+      id: ecr-login
+      uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Deploy to EKS
-        run: |
-          kubectl apply -f deployment.yaml
-          kubectl apply -f service.yaml
+    - name: Build, tag, and push Docker image
+      run: |
+        docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/helloworld-php-apache:latest .
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/helloworld-php-apache:latest
+
+    - name: Update Kubeconfig
+      run: |
+        aws eks update-kubeconfig --region $(terraform -chdir=terraform output -raw region) --name $(terraform -chdir=terraform output -raw eks_cluster_name)
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f kubernetes/deployment.yaml
+        kubectl apply -f kubernetes/service.yaml
