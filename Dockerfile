@@ -14,6 +14,10 @@ RUN a2enmod php8.1
 # Ajouter la directive ServerName pour éviter l'avertissement
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
+
+# Supprimer le fichier index.html par défaut d'Apache
+RUN rm -f /var/www/html/index.html
+
 # Copier le fichier index.php dans le répertoire /var/www/html
 COPY src/index.php /var/www/html/
 
